@@ -35,7 +35,7 @@ def build_dashboard_overview(db: Session, user_id: int) -> DashboardOverview:
         .where(Farm.owner_id == user_id)
         .order_by(Farm.created_at.asc())
     ).unique().scalar_one_or_none()
-    weather = get_current_weather(db)
+    weather = get_current_weather(db, location=farm.location if farm else None)
     market_alert = get_current_prices(db)[0] if get_current_prices(db) else None
 
     if not farm:

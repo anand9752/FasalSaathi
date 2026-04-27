@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, crops, dashboard, farms, market, users, weather
+from app.api.routes import auth, crops, dashboard, farms, inventory, market, users, weather
 
 
 api_router = APIRouter()
@@ -11,4 +11,5 @@ api_router.include_router(crops.router, prefix="/crops", tags=["crops"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(market.router, prefix="/market", tags=["market"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
+api_router.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
 

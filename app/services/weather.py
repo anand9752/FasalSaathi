@@ -1,6 +1,7 @@
 """
 Weather service — fetches REAL data from OpenWeatherMap API.
 Falls back to latest DB record when the API key is missing or the request fails.
+Adds source ("live" | "cache" | "fallback") and is_stale metadata to every response.
 """
 
 from datetime import UTC, datetime
@@ -28,7 +29,11 @@ OWM_FORECAST = f"{OWM_BASE}/forecast"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _db_row_to_current(item: WeatherData) -> WeatherCurrentResponse:
+def _db_row_to_current(
+    item: WeatherData,
+    source: str = "fallback",
+    is_stale: bool = True,
+) -> WeatherCurrentResponse:
     return WeatherCurrentResponse(
         location=item.location,
         recorded_at=item.recorded_at,
@@ -46,6 +51,8 @@ def _db_row_to_current(item: WeatherData) -> WeatherCurrentResponse:
         ),
         wind=WeatherWind(speed=item.wind_speed),
         rainfall=item.rainfall,
+        source=source,  # type: ignore[arg-type]
+        is_stale=is_stale,
     )
 
 
@@ -69,18 +76,35 @@ def _save_weather_row(db: Session, location: str, data: dict) -> WeatherData:
     return row
 
 
-def _fetch_current_from_owm(location: str) -> dict | None:
-    """Call OWM /weather and return raw JSON, or None on any error."""
+def _fetch_current_from_owm(
+    location: str,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> dict | None:
+    """Call OWM /weather and return raw JSON, or None on any error.
+
+    When lat/lon are supplied they take precedence over the location string
+    (OWM resolves coordinates more precisely than city-name queries).
+    """
     api_key = settings.openweather_api_key
     if not api_key:
         return None
     try:
-        params = {
-            "q": location,
-            "appid": api_key,
-            "units": "metric",
-            "lang": "en",
-        }
+        if lat is not None and lon is not None:
+            params = {
+                "lat": lat,
+                "lon": lon,
+                "appid": api_key,
+                "units": "metric",
+                "lang": "en",
+            }
+        else:
+            params = {
+                "q": location,
+                "appid": api_key,
+                "units": "metric",
+                "lang": "en",
+            }
         resp = httpx.get(OWM_CURRENT, params=params, timeout=8)
         resp.raise_for_status()
         return resp.json()
@@ -88,20 +112,35 @@ def _fetch_current_from_owm(location: str) -> dict | None:
         return None
 
 
-def _fetch_forecast_from_owm(location: str, days: int) -> list[dict]:
+def _fetch_forecast_from_owm(
+    location: str,
+    days: int,
+    lat: float | None = None,
+    lon: float | None = None,
+) -> list[dict]:
     """Call OWM /forecast (3-hourly) and return one entry per day."""
     api_key = settings.openweather_api_key
     if not api_key:
         return []
     try:
         cnt = min(days * 8, 40)  # OWM gives 3-hourly; 8 per day, max 40
-        params = {
-            "q": location,
-            "appid": api_key,
-            "units": "metric",
-            "cnt": cnt,
-            "lang": "en",
-        }
+        if lat is not None and lon is not None:
+            params = {
+                "lat": lat,
+                "lon": lon,
+                "appid": api_key,
+                "units": "metric",
+                "cnt": cnt,
+                "lang": "en",
+            }
+        else:
+            params = {
+                "q": location,
+                "appid": api_key,
+                "units": "metric",
+                "cnt": cnt,
+                "lang": "en",
+            }
         resp = httpx.get(OWM_FORECAST, params=params, timeout=8)
         resp.raise_for_status()
         items = resp.json().get("list", [])
@@ -120,22 +159,33 @@ def get_current_weather(
     lat: float | None = None,
     lon: float | None = None,
 ) -> WeatherCurrentResponse:
-    resolved_location = location or settings.weather_default_location
+    # Resolve a display location label and the coordinates to use for OWM
+    if lat is not None and lon is not None:
+        resolved_location = location or f"{lat},{lon}"
+        owm_lat, owm_lon = lat, lon
+    elif location:
+        resolved_location = location
+        owm_lat, owm_lon = None, None
+    else:
+        # No explicit coords or location — use configured defaults
+        resolved_location = settings.weather_default_location
+        owm_lat = settings.weather_default_lat
+        owm_lon = settings.weather_default_lon
 
     # 1️⃣  Try real OWM API first
-    owm_data = _fetch_current_from_owm(resolved_location)
+    owm_data = _fetch_current_from_owm(resolved_location, lat=owm_lat, lon=owm_lon)
     if owm_data:
         row = _save_weather_row(db, resolved_location, owm_data)
-        return _db_row_to_current(row)
+        return _db_row_to_current(row, source="live", is_stale=False)
 
-    # 2️⃣  Fall back to the latest DB record
+    # 2️⃣  Fall back to the latest DB record for this location
     cached = db.scalars(
         select(WeatherData)
         .where(WeatherData.location == resolved_location)
         .order_by(WeatherData.recorded_at.desc())
     ).first()
     if cached:
-        return _db_row_to_current(cached)
+        return _db_row_to_current(cached, source="cache", is_stale=True)
 
     # 3️⃣  Last resort: store a static placeholder so the UI never breaks
     fallback = WeatherData(
@@ -152,18 +202,29 @@ def get_current_weather(
     db.add(fallback)
     db.commit()
     db.refresh(fallback)
-    return _db_row_to_current(fallback)
+    return _db_row_to_current(fallback, source="fallback", is_stale=True)
 
 
 def get_forecast(
     db: Session,
     location: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
     days: int = 3,
 ) -> WeatherForecastResponse:
-    resolved_location = location or settings.weather_default_location
+    if lat is not None and lon is not None:
+        resolved_location = location or f"{lat},{lon}"
+        owm_lat, owm_lon = lat, lon
+    elif location:
+        resolved_location = location
+        owm_lat, owm_lon = None, None
+    else:
+        resolved_location = settings.weather_default_location
+        owm_lat = settings.weather_default_lat
+        owm_lon = settings.weather_default_lon
 
     # 1️⃣  Try real OWM 5-day forecast
-    owm_items = _fetch_forecast_from_owm(resolved_location, days)
+    owm_items = _fetch_forecast_from_owm(resolved_location, days, lat=owm_lat, lon=owm_lon)
     if owm_items:
         forecast = []
         for item in owm_items:
@@ -187,43 +248,48 @@ def get_forecast(
                     rainfall=rain,
                 )
             )
-        return WeatherForecastResponse(location=resolved_location, forecast=forecast)
-
-    # 2️⃣  Fall back to DB rows
-    db_items = list(
-        db.scalars(
-            select(WeatherData)
-            .where(WeatherData.location == resolved_location)
-            .order_by(WeatherData.recorded_at.asc())
-            .limit(max(days, 1))
+        return WeatherForecastResponse(
+            location=resolved_location,
+            forecast=forecast,
+            source="live",
+            is_stale=False,
         )
-    )
-    if db_items:
+
+    # 2️⃣  Live forecast failed — return a single latest stale snapshot.
+    #      Do NOT return multiple historical rows as fake future dates.
+    latest = db.scalars(
+        select(WeatherData)
+        .where(WeatherData.location == resolved_location)
+        .order_by(WeatherData.recorded_at.desc())
+    ).first()
+
+    if latest:
         return WeatherForecastResponse(
             location=resolved_location,
             forecast=[
                 WeatherForecastItem(
-                    recorded_at=item.recorded_at,
+                    recorded_at=latest.recorded_at,
                     weather=[
                         WeatherCondition(
-                            main=item.weather_main,
-                            description=item.weather_description,
-                            icon=item.weather_icon,
+                            main=latest.weather_main,
+                            description=latest.weather_description,
+                            icon=latest.weather_icon,
                         )
                     ],
                     main=WeatherMain(
-                        temp=item.temperature,
-                        feels_like=item.temperature,
-                        humidity=item.humidity,
+                        temp=latest.temperature,
+                        feels_like=latest.temperature,
+                        humidity=latest.humidity,
                     ),
-                    wind=WeatherWind(speed=item.wind_speed),
-                    rainfall=item.rainfall,
+                    wind=WeatherWind(speed=latest.wind_speed),
+                    rainfall=latest.rainfall,
                 )
-                for item in db_items
             ],
+            source="cache",
+            is_stale=True,
         )
 
-    # 3️⃣  No data at all — return current as single forecast entry
+    # 3️⃣  No data at all — call get_current_weather which handles the fallback
     current = get_current_weather(db, resolved_location)
     return WeatherForecastResponse(
         location=resolved_location,
@@ -236,4 +302,6 @@ def get_forecast(
                 rainfall=current.rainfall,
             )
         ],
+        source=current.source,  # type: ignore[arg-type]
+        is_stale=current.is_stale,
     )

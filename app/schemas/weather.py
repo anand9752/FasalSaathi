@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -26,6 +27,8 @@ class WeatherCurrentResponse(BaseModel):
     main: WeatherMain
     wind: WeatherWind
     rainfall: float = 0
+    source: Literal["live", "cache", "fallback"] = "fallback"
+    is_stale: bool = True
 
 
 class WeatherForecastItem(BaseModel):
@@ -39,4 +42,5 @@ class WeatherForecastItem(BaseModel):
 class WeatherForecastResponse(BaseModel):
     location: str
     forecast: list[WeatherForecastItem]
-
+    source: Literal["live", "cache", "fallback"] = "fallback"
+    is_stale: bool = True

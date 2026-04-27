@@ -23,4 +23,5 @@ class User(Base):
     )
 
     farms = relationship("Farm", back_populates="owner", cascade="all, delete-orphan")
+    inventory_items = relationship("InventoryItem", back_populates="owner", cascade="all, delete-orphan")
 
