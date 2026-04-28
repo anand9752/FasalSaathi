@@ -26,27 +26,40 @@ class CropRead(ORMModel):
 
 
 class CropRecommendationRequest(BaseModel):
-    soil_type: str
-    season: str
+    soil_ph: float
+    nitrogen: float
+    phosphorus: float
+    potassium: float
+    soil_moisture: float
+    temperature: float
+    rainfall: float
     location: str
-    irrigation_type: str | None = None
-    search: str | None = None
 
 
 class CropRecommendationItem(BaseModel):
     crop_id: int
     name: str
     name_hindi: str
-    season: str
-    score: float
+    season: str | None = None
+    score: float | None = None
     profit_margin: float
     estimated_yield_range: str
     water_requirement: str
     market_demand: str
     climate_suitability: str
     duration: str
-    difficulty: str
     investment: float
     risk_level: str
     description: str
 
+
+class CropDetailResponse(BaseModel):
+    crop_name: str
+    crop_name_hindi: str
+    overview: str
+    land_preparation: list[str]
+    sowing_time: list[str]
+    irrigation_schedule: list[str]
+    fertilizers: list[str]
+    pesticides: list[str]
+    harvesting: list[str]

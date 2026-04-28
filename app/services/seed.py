@@ -181,6 +181,8 @@ def seed_database() -> None:
                 phosphorus=72,
                 potassium=58,
                 organic_matter=2.6,
+                soil_moisture=64,
+                temperature=28,
                 test_date=datetime.now(UTC) - timedelta(days=14),
             )
         )
@@ -224,4 +226,3 @@ def seed_database() -> None:
         )
 
         db.commit()
-

@@ -36,6 +36,8 @@ class SoilTest(Base):
     phosphorus: Mapped[float] = mapped_column(Float)
     potassium: Mapped[float] = mapped_column(Float)
     organic_matter: Mapped[float] = mapped_column(Float)
+    soil_moisture: Mapped[float] = mapped_column(Float, default=0)
+    temperature: Mapped[float] = mapped_column(Float, default=0)
     test_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -44,3 +46,6 @@ class SoilTest(Base):
 
     farm = relationship("Farm", back_populates="soil_tests")
 
+    @property
+    def soil_ph(self) -> float:
+        return self.ph

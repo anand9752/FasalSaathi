@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     weather_default_lat: float = 22.6148
     weather_default_lon: float = 77.7622
     openweather_api_key: str | None = None
+    data_gov_api_key: str | None = None
+    data_gov_base_url: str = "https://api.data.gov.in/resource"
+    data_gov_market_resource_id: str = "9ef84268-d588-465a-a308-a864a43d0070"
+    data_gov_timeout_seconds: float = 10.0
+    data_gov_default_limit: int = 100
+    data_gov_filtered_limit: int = 1000
+    data_gov_max_filtered_pages: int = 5
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    gemini_timeout_seconds: float = 20.0
 
 
 @lru_cache
@@ -43,4 +54,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

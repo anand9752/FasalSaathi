@@ -8,14 +8,26 @@ from app.schemas.common import ORMModel
 class SoilTestRead(ORMModel):
     id: int
     farm_id: int
-    ph: float
+    soil_ph: float
     nitrogen: float
     phosphorus: float
     potassium: float
     organic_matter: float
+    soil_moisture: float
+    temperature: float
     test_date: datetime
     created_at: datetime
     updated_at: datetime
+
+
+class SoilTestCreate(BaseModel):
+    farm_id: int
+    soil_ph: float
+    nitrogen: float
+    phosphorus: float
+    potassium: float
+    soil_moisture: float
+    temperature: float
 
 
 class CropCycleRead(BaseModel):
@@ -67,4 +79,3 @@ class FarmRead(ORMModel):
     updated_at: datetime
     soil_tests: list[SoilTestRead] = []
     crop_cycles: list[CropCycleRead] = []
-

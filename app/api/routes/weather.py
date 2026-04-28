@@ -22,7 +22,9 @@ def current_weather(
 @router.get("/forecast", response_model=WeatherForecastResponse)
 def weather_forecast(
     days: int = Query(default=3, ge=1, le=10),
+    lat: float | None = Query(default=None),
+    lon: float | None = Query(default=None),
     location: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> WeatherForecastResponse:
-    return get_forecast(db, location=location, days=days)
+    return get_forecast(db, location=location, lat=lat, lon=lon, days=days)

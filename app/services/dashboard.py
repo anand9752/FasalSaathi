@@ -1,13 +1,13 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models.crop import Crop, FarmCropCycle
+from app.models.crop import FarmCropCycle
 from app.models.farm import Farm
 from app.schemas.crop import CropRecommendationRequest
 from app.schemas.dashboard import DashboardOverview, FarmVitals, TodayPriority, YieldForecast
 from app.schemas.farm import CropCycleRead, FarmRead, SoilTestRead
+from app.services.crop_recommendation import recommend_crops_dynamic
 from app.services.market import get_current_prices
-from app.services.recommendation import build_recommendations
 from app.services.weather import get_current_weather
 
 
@@ -36,7 +36,8 @@ def build_dashboard_overview(db: Session, user_id: int) -> DashboardOverview:
         .order_by(Farm.created_at.asc())
     ).unique().scalar_one_or_none()
     weather = get_current_weather(db, location=farm.location if farm else None)
-    market_alert = get_current_prices(db)[0] if get_current_prices(db) else None
+    market_prices = get_current_prices(db)
+    market_alert = market_prices[0] if market_prices else None
 
     if not farm:
         return DashboardOverview(weather=weather, market_alert=market_alert, recommendation_preview=[])
@@ -44,15 +45,23 @@ def build_dashboard_overview(db: Session, user_id: int) -> DashboardOverview:
     active_cycle = next((cycle for cycle in farm.crop_cycles if cycle.status == "active"), None)
     latest_soil_test = max(farm.soil_tests, key=lambda item: item.test_date, default=None)
 
-    recommendations = build_recommendations(
-        list(db.scalars(select(Crop).order_by(Crop.name.asc()))),
-        CropRecommendationRequest(
-            soil_type=farm.soil_type,
-            season=active_cycle.season if active_cycle else "Kharif",
-            location=farm.location,
-            irrigation_type=farm.irrigation_type,
-        ),
-    )[:3]
+    recommendations = (
+        recommend_crops_dynamic(
+            db,
+            CropRecommendationRequest(
+                soil_ph=latest_soil_test.soil_ph,
+                nitrogen=latest_soil_test.nitrogen,
+                phosphorus=latest_soil_test.phosphorus,
+                potassium=latest_soil_test.potassium,
+                soil_moisture=latest_soil_test.soil_moisture,
+                temperature=latest_soil_test.temperature or weather.main.temp,
+                rainfall=weather.rainfall,
+                location=farm.location,
+            ),
+        )[:3]
+        if latest_soil_test
+        else []
+    )
 
     overview = DashboardOverview(
         farm=FarmRead(
@@ -84,11 +93,14 @@ def build_dashboard_overview(db: Session, user_id: int) -> DashboardOverview:
         )
         if latest_soil_test:
             overview.farm_vitals = FarmVitals(
-                soil_moisture=65.0,
-                soil_ph=latest_soil_test.ph,
+                soil_moisture=latest_soil_test.soil_moisture,
+                soil_ph=latest_soil_test.soil_ph,
                 nitrogen=latest_soil_test.nitrogen,
                 phosphorus=latest_soil_test.phosphorus,
                 potassium=latest_soil_test.potassium,
+                temperature=latest_soil_test.temperature,
+                rainfall=weather.rainfall,
+                climate_summary=weather.weather[0].description if weather.weather else "Unavailable",
             )
         overview.yield_forecast = YieldForecast(
             crop_name=crop.name_hindi,

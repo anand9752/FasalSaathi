@@ -19,6 +19,9 @@ class FarmVitals(BaseModel):
     nitrogen: float
     phosphorus: float
     potassium: float
+    temperature: float
+    rainfall: float
+    climate_summary: str
 
 
 class YieldForecast(BaseModel):
@@ -39,4 +42,3 @@ class DashboardOverview(BaseModel):
     weather: WeatherCurrentResponse | None = None
     market_alert: MarketPriceCurrent | None = None
     recommendation_preview: list[CropRecommendationItem] = []
-

@@ -11,11 +11,19 @@ router = APIRouter()
 
 @router.get("/prices/current", response_model=list[MarketPriceCurrent])
 def current_prices(
+    state: str | None = Query(default=None),
     market: str | None = Query(default=None),
+    commodity: str | None = Query(default=None),
     crop_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[MarketPriceCurrent]:
-    return get_current_prices(db, market=market, crop_id=crop_id)
+    return get_current_prices(
+        db,
+        state=state,
+        market=market,
+        commodity=commodity,
+        crop_id=crop_id,
+    )
 
 
 @router.get("/prices/history/{crop_id}", response_model=list[MarketPriceRead])

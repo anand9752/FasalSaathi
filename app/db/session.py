@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
@@ -25,4 +25,25 @@ def init_db() -> None:
     from app.models import all_models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _ensure_runtime_schema()
 
+
+def _ensure_runtime_schema() -> None:
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    if "soil_tests" not in tables:
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("soil_tests")}
+    statements: list[str] = []
+    if "soil_moisture" not in columns:
+        statements.append("ALTER TABLE soil_tests ADD COLUMN soil_moisture FLOAT DEFAULT 0")
+    if "temperature" not in columns:
+        statements.append("ALTER TABLE soil_tests ADD COLUMN temperature FLOAT DEFAULT 0")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
