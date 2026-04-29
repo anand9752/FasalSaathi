@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     data_gov_default_limit: int = 100
     data_gov_filtered_limit: int = 1000
     data_gov_max_filtered_pages: int = 5
+    newsdata_api_key: str | None = None
+    newsdata_base_url: str = "https://newsdata.io/api/1/news"
+    newsdata_cache_ttl_hours: int = 6
 
     # AI Keys
     gemini_api_key: str | None = None

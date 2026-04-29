@@ -3,6 +3,7 @@ from datetime import date, datetime
 from pydantic import BaseModel
 
 from app.schemas.common import ORMModel
+from app.schemas.crop import ManagedCropRead
 
 
 class SoilTestRead(ORMModel):
@@ -79,3 +80,4 @@ class FarmRead(ORMModel):
     updated_at: datetime
     soil_tests: list[SoilTestRead] = []
     crop_cycles: list[CropCycleRead] = []
+    managed_crops: list[ManagedCropRead] = []

@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.crop import Crop, FarmCropCycle
 from app.models.farm import Farm
 from app.models.user import User
+from app.schemas.crop import ManagedCropRead
 from app.schemas.farm import CropCycleRead, FarmCreate, FarmRead, FarmUpdate, SoilTestRead
 
 
@@ -41,6 +42,35 @@ def _serialize_farm(farm: Farm) -> FarmRead:
             )
             for item in sorted(farm.crop_cycles, key=lambda x: (x.year, x.created_at), reverse=True)
         ],
+        managed_crops=[
+            ManagedCropRead(
+                id=item.id,
+                farm_id=item.farm_id,
+                farm_name=farm.name,
+                name=item.name,
+                name_hindi=item.name_hindi,
+                crop_type=item.crop_type,
+                season=item.season,
+                duration=item.duration,
+                area=item.area,
+                estimated_cost=item.estimated_cost,
+                estimated_profit=item.estimated_profit,
+                expected_yield=item.expected_yield,
+                risk_level=item.risk_level,
+                status=item.status,
+                sowing_date=item.sowing_date,
+                expected_harvest_date=item.expected_harvest_date,
+                actual_harvest_date=item.actual_harvest_date,
+                variety=item.variety,
+                water_requirement=item.water_requirement,
+                soil_preference=item.soil_preference,
+                description=item.description,
+                notes=item.notes,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+            for item in sorted(farm.managed_crops, key=lambda x: (x.updated_at, x.created_at), reverse=True)
+        ],
     )
 
 
@@ -50,7 +80,11 @@ router = APIRouter()
 def _get_owned_farm(db: Session, user_id: int, farm_id: int) -> Farm:
     farm = db.execute(
         select(Farm)
-        .options(joinedload(Farm.soil_tests), joinedload(Farm.crop_cycles).joinedload(FarmCropCycle.crop))
+        .options(
+            joinedload(Farm.soil_tests),
+            joinedload(Farm.crop_cycles).joinedload(FarmCropCycle.crop),
+            joinedload(Farm.managed_crops),
+        )
         .where(Farm.id == farm_id, Farm.owner_id == user_id)
     )
     farm = farm.unique().scalar_one_or_none()
@@ -66,7 +100,11 @@ def list_farms(
     farms = list(
         db.execute(
             select(Farm)
-            .options(joinedload(Farm.soil_tests), joinedload(Farm.crop_cycles).joinedload(FarmCropCycle.crop))
+            .options(
+                joinedload(Farm.soil_tests),
+                joinedload(Farm.crop_cycles).joinedload(FarmCropCycle.crop),
+                joinedload(Farm.managed_crops),
+            )
             .where(Farm.owner_id == current_user.id)
             .order_by(Farm.created_at.asc())
         )
