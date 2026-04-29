@@ -4,6 +4,7 @@ from google.genai import types
 from typing import Optional, Dict, Any
 from app.core.config import settings
 
+
 class GeminiClient:
     def __init__(self):
         self.client = None
@@ -29,7 +30,6 @@ class GeminiClient:
         if not self.client:
             return {}
         try:
-            # New SDK uses response_mime_type in generate_content
             response = self.client.models.generate_content(
                 model=self.chat_model,
                 contents=prompt,
@@ -61,12 +61,12 @@ class GeminiClient:
                 contents=text,
                 config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY")
             )
-            # Handle the result format from the new SDK
             if hasattr(result, 'embeddings'):
                 return result.embeddings[0].values
             return []
         except Exception as e:
             print(f"Error generating embedding: {e}")
             return []
+
 
 gemini_client = GeminiClient()
