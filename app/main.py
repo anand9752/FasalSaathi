@@ -27,6 +27,8 @@ def create_application() -> FastAPI:
     def startup_event() -> None:
         init_db()
         seed_database()
+        from app.services.weather_alert import start_scheduler
+        start_scheduler()
 
     @application.get("/health", tags=["health"])
     def healthcheck() -> dict[str, str]:
