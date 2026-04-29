@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.market import MarketPriceCurrent, MarketPriceRead, MarketTrendResponse
-from app.services.market import get_current_prices, get_markets, get_market_trend, get_price_history
+from app.schemas.market import MarketPriceCurrent, MarketPriceRead, MarketTrendResponse, PriceAlertCreate, PriceAlertRead
+from app.services.market import get_current_prices, get_markets, get_market_trend, get_price_history, create_price_alert, get_user_price_alerts, delete_price_alert
+from app.api.deps import get_current_active_user
+from app.models.user import User
 
 
 router = APIRouter()
@@ -39,3 +41,31 @@ def markets(db: Session = Depends(get_db)) -> list[str]:
 @router.get("/trends/{crop_id}", response_model=MarketTrendResponse)
 def market_trends(crop_id: int, db: Session = Depends(get_db)) -> MarketTrendResponse:
     return get_market_trend(db, crop_id)
+
+
+@router.post("/alerts", response_model=PriceAlertRead)
+def create_alert(
+    alert_in: PriceAlertCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> PriceAlertRead:
+    return create_price_alert(db, current_user.id, alert_in)
+
+
+@router.get("/alerts", response_model=list[PriceAlertRead])
+def list_alerts(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> list[PriceAlertRead]:
+    return get_user_price_alerts(db, current_user.id)
+
+
+@router.delete("/alerts/{alert_id}")
+def remove_alert(
+    alert_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    if not delete_price_alert(db, current_user.id, alert_id):
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"status": "deleted"}

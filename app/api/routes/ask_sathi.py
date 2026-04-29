@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 from app.services.ask_sathi.pipeline import process_ask_sathi_query
 
@@ -11,7 +11,7 @@ class ChatMessage(BaseModel):
 
 class AskSathiRequest(BaseModel):
     query: str
-    history: Optional[List[Dict[str, str]]] = []
+    history: Optional[List[Dict[str, str]]] = Field(default_factory=list)
 
 class AskSathiResponse(BaseModel):
     type: str

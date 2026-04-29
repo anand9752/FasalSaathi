@@ -203,3 +203,28 @@ def get_market_trend(db: Session, crop_id: int) -> MarketTrendResponse:
         price_change=0,
         forecast="Live mandi feed provides current daily prices only, so historical movement is unavailable.",
     )
+
+
+from app.models.price_alert import PriceAlert
+from app.schemas.market import PriceAlertCreate
+
+def create_price_alert(db: Session, user_id: int, alert_in: PriceAlertCreate) -> PriceAlert:
+    db_alert = PriceAlert(
+        user_id=user_id,
+        **alert_in.model_dump()
+    )
+    db.add(db_alert)
+    db.commit()
+    db.refresh(db_alert)
+    return db_alert
+
+def get_user_price_alerts(db: Session, user_id: int) -> list[PriceAlert]:
+    return db.query(PriceAlert).filter(PriceAlert.user_id == user_id, PriceAlert.is_active == True).all()
+
+def delete_price_alert(db: Session, user_id: int, alert_id: int) -> bool:
+    db_alert = db.query(PriceAlert).filter(PriceAlert.id == alert_id, PriceAlert.user_id == user_id).first()
+    if db_alert:
+        db.delete(db_alert)
+        db.commit()
+        return True
+    return False

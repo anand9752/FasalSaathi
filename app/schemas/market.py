@@ -34,3 +34,24 @@ class MarketTrendResponse(BaseModel):
     average_price: float
     price_change: float
     forecast: str
+
+
+class PriceAlertBase(BaseModel):
+    commodity: str
+    target_price: float
+    condition: str  # 'above', 'below'
+
+
+class PriceAlertCreate(PriceAlertBase):
+    pass
+
+
+class PriceAlertRead(PriceAlertBase):
+    id: int
+    user_id: int
+    is_active: bool
+    is_notified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
