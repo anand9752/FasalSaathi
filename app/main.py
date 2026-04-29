@@ -27,8 +27,12 @@ def create_application() -> FastAPI:
     def startup_event() -> None:
         init_db()
         seed_database()
-        from app.services.weather_alert import start_scheduler
-        start_scheduler()
+        from app.services.weather_alert import start_scheduler as start_weather_scheduler
+        from app.services.market_alert import start_market_scheduler
+        from app.services.weather_alert import scheduler
+        
+        start_weather_scheduler()
+        start_market_scheduler(scheduler)
 
     @application.get("/health", tags=["health"])
     def healthcheck() -> dict[str, str]:
