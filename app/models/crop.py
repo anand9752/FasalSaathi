@@ -55,3 +55,34 @@ class FarmCropCycle(Base):
     farm = relationship("Farm", back_populates="crop_cycles")
     crop = relationship("Crop", back_populates="farm_cycles")
 
+
+class ManagedCrop(Base):
+    __tablename__ = "managed_crops"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farms.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    name_hindi: Mapped[str] = mapped_column(String(255))
+    crop_type: Mapped[str] = mapped_column(String(100), default="field")
+    season: Mapped[str] = mapped_column(String(50), default="")
+    duration: Mapped[int] = mapped_column(Integer, default=0)
+    area: Mapped[float] = mapped_column(Float, default=0)
+    estimated_cost: Mapped[float] = mapped_column(Float, default=0)
+    estimated_profit: Mapped[float] = mapped_column(Float, default=0)
+    expected_yield: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_level: Mapped[str] = mapped_column(String(20), default="medium")
+    status: Mapped[str] = mapped_column(String(30), default="planned")
+    sowing_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    expected_harvest_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    actual_harvest_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    variety: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    water_requirement: Mapped[str] = mapped_column(String(255), default="")
+    soil_preference: Mapped[str] = mapped_column(String(255), default="")
+    description: Mapped[str] = mapped_column(String(1000), default="")
+    notes: Mapped[str] = mapped_column(String(1000), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    farm = relationship("Farm", back_populates="managed_crops")

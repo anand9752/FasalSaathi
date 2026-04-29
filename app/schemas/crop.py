@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -21,6 +21,83 @@ class CropRead(ORMModel):
     market_demand_level: str
     risk_level: str
     description: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ManagedCropBase(BaseModel):
+    farm_id: int
+    name: str
+    name_hindi: str
+    crop_type: str
+    season: str = ""
+    duration: int
+    area: float
+    estimated_cost: float
+    estimated_profit: float
+    expected_yield: float | None = None
+    risk_level: str
+    status: str = "planned"
+    sowing_date: date | None = None
+    expected_harvest_date: date | None = None
+    actual_harvest_date: date | None = None
+    variety: str | None = None
+    water_requirement: str = ""
+    soil_preference: str = ""
+    description: str = ""
+    notes: str = ""
+
+
+class ManagedCropCreate(ManagedCropBase):
+    pass
+
+
+class ManagedCropUpdate(BaseModel):
+    farm_id: int | None = None
+    name: str | None = None
+    name_hindi: str | None = None
+    crop_type: str | None = None
+    season: str | None = None
+    duration: int | None = None
+    area: float | None = None
+    estimated_cost: float | None = None
+    estimated_profit: float | None = None
+    expected_yield: float | None = None
+    risk_level: str | None = None
+    status: str | None = None
+    sowing_date: date | None = None
+    expected_harvest_date: date | None = None
+    actual_harvest_date: date | None = None
+    variety: str | None = None
+    water_requirement: str | None = None
+    soil_preference: str | None = None
+    description: str | None = None
+    notes: str | None = None
+
+
+class ManagedCropRead(ORMModel):
+    id: int
+    farm_id: int
+    farm_name: str
+    name: str
+    name_hindi: str
+    crop_type: str
+    season: str
+    duration: int
+    area: float
+    estimated_cost: float
+    estimated_profit: float
+    expected_yield: float | None = None
+    risk_level: str
+    status: str
+    sowing_date: date | None = None
+    expected_harvest_date: date | None = None
+    actual_harvest_date: date | None = None
+    variety: str | None = None
+    water_requirement: str
+    soil_preference: str
+    description: str
+    notes: str
     created_at: datetime
     updated_at: datetime
 

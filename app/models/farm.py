@@ -24,6 +24,7 @@ class Farm(Base):
     owner = relationship("User", back_populates="farms")
     soil_tests = relationship("SoilTest", back_populates="farm", cascade="all, delete-orphan")
     crop_cycles = relationship("FarmCropCycle", back_populates="farm", cascade="all, delete-orphan")
+    managed_crops = relationship("ManagedCrop", back_populates="farm", cascade="all, delete-orphan")
 
 
 class SoilTest(Base):
