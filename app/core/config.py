@@ -42,10 +42,19 @@ class Settings(BaseSettings):
     data_gov_default_limit: int = 100
     data_gov_filtered_limit: int = 1000
     data_gov_max_filtered_pages: int = 5
+
+    # AI Keys
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.5-flash"
     gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
     gemini_timeout_seconds: float = 20.0
+    
+    # User's AI Specifics
+    gemini_chat_model: str = "gemini-1.5-flash"
+    gemini_embedding_model: str = "text-embedding-004"
+    pinecone_api_key: str | None = None
+    pinecone_index_name: str = "farmer-chatbot"
+    pinecone_namespace: str = "agriculture-docs"
 
 
 @lru_cache
