@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 
@@ -108,7 +108,7 @@ def seed_database() -> None:
                         crop_id=crop.id,
                         market_name="Itarsi Mandi",
                         price=max(crop.estimated_profit / 10 + price_offset, 1000),
-                        date=datetime.now(UTC) - timedelta(days=4 - day_offset),
+                        date=datetime.now(timezone.utc) - timedelta(days=4 - day_offset),
                     )
                 )
 
@@ -123,7 +123,7 @@ def seed_database() -> None:
                     weather_main="Clouds",
                     weather_description="scattered clouds",
                     weather_icon="03d",
-                    recorded_at=datetime.now(UTC),
+                    recorded_at=datetime.now(timezone.utc),
                 ),
                 WeatherData(
                     location="Itarsi, Madhya Pradesh",
@@ -134,7 +134,7 @@ def seed_database() -> None:
                     weather_main="Clear",
                     weather_description="clear sky",
                     weather_icon="01d",
-                    recorded_at=datetime.now(UTC) + timedelta(days=1),
+                    recorded_at=datetime.now(timezone.utc) + timedelta(days=1),
                 ),
                 WeatherData(
                     location="Itarsi, Madhya Pradesh",
@@ -145,7 +145,7 @@ def seed_database() -> None:
                     weather_main="Rain",
                     weather_description="light rain",
                     weather_icon="10d",
-                    recorded_at=datetime.now(UTC) + timedelta(days=2),
+                    recorded_at=datetime.now(timezone.utc) + timedelta(days=2),
                 ),
             ]
         )
@@ -183,7 +183,7 @@ def seed_database() -> None:
                 organic_matter=2.6,
                 soil_moisture=64,
                 temperature=28,
-                test_date=datetime.now(UTC) - timedelta(days=14),
+                test_date=datetime.now(timezone.utc) - timedelta(days=14),
             )
         )
         db.add_all(

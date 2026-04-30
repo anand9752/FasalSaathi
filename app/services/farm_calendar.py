@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import HTTPException, status
@@ -79,7 +79,7 @@ def build_farm_calendar(
 
     return FarmCalendarResponse(
         farm_id=farm.id,
-        generated_at=datetime.now(UTC),
+        generated_at=datetime.now(timezone.utc),
         crop_context=crop_context,
         weather=weather_snapshot,
         farm_health=farm_health,
