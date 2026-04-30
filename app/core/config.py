@@ -1,12 +1,15 @@
+import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-BASE_DIR = Path(__file__).resolve().parents[3]  # repo root
 BACKEND_DIR = Path(__file__).resolve().parents[2]  # backend/
+DEFAULT_SECRET_KEY = "fasalsaathi-dev-secret-key-change-me"
 
 
 class Settings(BaseSettings):
@@ -18,11 +21,13 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "FasalSaathi API"
+    environment: str = "development"
     api_v1_prefix: str = "/api/v1"
-    secret_key: str = "fasalsaathi-dev-secret-key-change-me"
+    secret_key: str = DEFAULT_SECRET_KEY
     access_token_expire_minutes: int = 60 * 24
     algorithm: str = "HS256"
-    database_url: str = f"sqlite:///{(BASE_DIR / 'data' / 'fasalsaathi_app.db').as_posix()}"
+    database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'fasalsaathi_app.db').as_posix()}"
+    frontend_url: str = "http://localhost:5173"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
@@ -59,6 +64,43 @@ class Settings(BaseSettings):
     pinecone_api_key: str | None = None
     pinecone_index_name: str = "farmer-chatbot"
     pinecone_namespace: str = "agriculture-docs"
+
+    # Email notifications
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: Any) -> list[str] | Any:
+        if not isinstance(value, str):
+            return value
+
+        value = value.strip()
+        if not value:
+            return []
+
+        if value.startswith("["):
+            parsed = json.loads(value)
+            if not isinstance(parsed, list):
+                raise ValueError("CORS_ORIGINS JSON value must be a list")
+            return parsed
+
+        return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        if self.environment.lower() not in {"production", "prod"}:
+            return self
+
+        if self.secret_key == DEFAULT_SECRET_KEY or len(self.secret_key) < 32:
+            raise ValueError("Set a strong SECRET_KEY before running in production")
+
+        if "*" in self.cors_origins:
+            raise ValueError("CORS_ORIGINS must list explicit origins in production")
+
+        return self
 
 
 @lru_cache
