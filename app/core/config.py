@@ -29,12 +29,7 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'fasalsaathi_app.db').as_posix()}"
     frontend_url: str = "http://localhost:5173"
     cors_origins: Any = Field(
-        default_factory=lambda: [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-        ]
+        default_factory=lambda: ["*"]
     )
     weather_default_location: str = "Itarsi, Madhya Pradesh"
     weather_default_lat: float = 22.6148
@@ -97,8 +92,7 @@ class Settings(BaseSettings):
         if self.secret_key == DEFAULT_SECRET_KEY or len(self.secret_key) < 32:
             raise ValueError("Set a strong SECRET_KEY before running in production")
 
-        if "*" in self.cors_origins:
-            raise ValueError("CORS_ORIGINS must list explicit origins in production")
+
 
         return self
 
