@@ -1,15 +1,33 @@
 from collections.abc import Generator
+from pathlib import Path
 
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 from app.db.base import Base
 
 
+def _ensure_sqlite_directory(database_url: str) -> None:
+    url = make_url(database_url)
+    if not url.drivername.startswith("sqlite"):
+        return
+    if not url.database or url.database == ":memory:":
+        return
+
+    Path(url.database).expanduser().parent.mkdir(parents=True, exist_ok=True)
+
+
+_ensure_sqlite_directory(settings.database_url)
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 
-engine = create_engine(settings.database_url, future=True, connect_args=connect_args)
+engine = create_engine(
+    settings.database_url,
+    future=True,
+    connect_args=connect_args,
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
 
 
