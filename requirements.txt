@@ -38,3 +38,4 @@ uvicorn==0.35.0
 apscheduler==3.10.4
 google-genai==1.74.0
 pinecone==8.1.2
+psycopg2-binary==2.9.12
