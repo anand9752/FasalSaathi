@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'fasalsaathi_app.db').as_posix()}"
     frontend_url: str = "http://localhost:5173"
-    cors_origins: list[str] = Field(
+    cors_origins: Any = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
