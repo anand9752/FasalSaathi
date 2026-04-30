@@ -4,7 +4,7 @@ Falls back to latest DB record when the API key is missing or the request fails.
 Adds source ("live" | "cache" | "fallback") and is_stale metadata to every response.
 """
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import httpx
 from sqlalchemy import select
@@ -68,7 +68,7 @@ def _save_weather_row(db: Session, location: str, data: dict) -> WeatherData:
         weather_main=data["weather"][0]["main"],
         weather_description=data["weather"][0]["description"],
         weather_icon=data["weather"][0]["icon"],
-        recorded_at=datetime.now(UTC),
+        recorded_at=datetime.now(timezone.utc),
     )
     db.add(row)
     db.commit()
@@ -197,7 +197,7 @@ def get_current_weather(
         weather_main="Clear",
         weather_description="clear sky (offline)",
         weather_icon="01d",
-        recorded_at=datetime.now(UTC),
+        recorded_at=datetime.now(timezone.utc),
     )
     db.add(fallback)
     db.commit()
@@ -231,7 +231,7 @@ def get_forecast(
             rain = item.get("rain", {}).get("3h", 0.0)
             forecast.append(
                 WeatherForecastItem(
-                    recorded_at=datetime.fromtimestamp(item["dt"], tz=UTC),
+                    recorded_at=datetime.fromtimestamp(item["dt"], tz=timezone.utc),
                     weather=[
                         WeatherCondition(
                             main=item["weather"][0]["main"],

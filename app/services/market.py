@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 import hashlib
 
 import httpx
@@ -21,10 +21,10 @@ def _parse_arrival_date(value: str | None) -> datetime:
     if value:
         for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
             try:
-                return datetime.strptime(value, fmt).replace(tzinfo=UTC)
+                return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
             except ValueError:
                 continue
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 def _hash_to_int(value: str) -> int:
